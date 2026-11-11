@@ -1223,7 +1223,7 @@ function goWord(key){
 function jumpToAddWord(){ showMode("list"); setTimeout(()=>{ const el = $("uw-kanji"); if(el) el.focus(); }, 60); }
 
 /* ---------- DANH SÁCH TỪ + TỪ TỰ THÊM ---------- */
-let listView = "core"; // "core" = ⭐ Từ lõi (chỉ tier 1) | "all" = 📖 Từ mở rộng (toàn bộ 2 tầng)
+let listView = "all"; // mặc định TOÀN BỘ 2 tầng (anh phản ánh 11/11: mở danh sách chỉ thấy từ lõi tưởng thiếu từ) | "core" = ⭐ Từ lõi (chỉ tier 1)
 function setListView(v){ listView = v; renderList(); }
 function renderList(){
   const kw = ($("list-search").value || "").trim().toLowerCase();
