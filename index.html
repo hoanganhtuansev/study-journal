@@ -1137,6 +1137,17 @@ function recordAnswer(q, ok){
 }
 
 function hlEsc(s){ return esc(s).replace(/「([^」]+)」/g, '<b class="hl">「$1」</b>'); }
+function bookHL(q, s){
+  let h = hlEsc(s);
+  const terms = [];
+  (q.book_pairs || []).forEach(function(p){ if(p.vocab){ p.vocab.split(' ・ ').forEach(function(e){ const t = e.split('（')[0].split(':')[0].trim(); if(t.length >= 2 && !terms.includes(t)) terms.push(t); }); } });
+  if(terms.length){
+    terms.sort(function(a, b){ return b.length - a.length; });
+    const re = new RegExp(terms.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
+    h = h.replace(re, '<b class="hl">$&</b>');
+  }
+  return h;
+}
 function vocHTML(s){ return esc(s).split(' ・ ').map(function(e){ const i = e.indexOf(':'); return i > 0 ? '<b>' + e.slice(0, i) + '</b>' + e.slice(i) : e; }).join(' ・ '); }
 function detailHTML(q){
   let h = "";
@@ -1149,8 +1160,8 @@ function detailHTML(q){
   }
   if(q.book_text || (q.book_pairs && q.book_pairs.length)){
     h += '<details class="bookdet"><summary>📖 Phần 2 — Nội dung chi tiết sách (trang ' + q.book_page + ')</summary>'
-      + (q.book_text ? '<h4>2.1 — Chép lại nội dung sách (tự dịch trước)</h4><div class="booktext jp">' + hlEsc(q.book_text) + '</div>' : '')
-      + ((q.book_pairs && q.book_pairs.length) ? '<h4>2.2 — Dịch chi tiết (Nhật trên, Việt dưới, từ vựng theo câu)</h4>' + q.book_pairs.map(p => '<div class="bpair"><div class="bjp jp">' + hlEsc(p.jp) + '</div><div class="bvi">' + hlEsc(p.vi) + '</div>' + (p.vocab ? '<div class="bvoc">' + vocHTML(p.vocab) + '</div>' : '') + '</div>').join("") : '')
+      + (q.book_text ? '<h4>2.1 — Chép lại nội dung sách (tự dịch trước)</h4><div class="booktext jp">' + bookHL(q, q.book_text) + '</div>' : '')
+      + ((q.book_pairs && q.book_pairs.length) ? '<h4>2.2 — Dịch chi tiết (Nhật trên, Việt dưới, từ vựng theo câu)</h4>' + q.book_pairs.map(p => '<div class="bpair"><div class="bjp jp">' + bookHL(q, p.jp) + '</div><div class="bvi">' + hlEsc(p.vi) + '</div>' + (p.vocab ? '<div class="bvoc">' + vocHTML(p.vocab) + '</div>' : '') + '</div>').join("") : '')
       + '</details>';
   }
   return h;
