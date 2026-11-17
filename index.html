@@ -1149,11 +1149,12 @@ function bookHL(q, s){
   return h;
 }
 function vocHTML(s){ return esc(s).split(' ・ ').map(function(e){ const i = e.indexOf(':'); return i > 0 ? '<b>' + e.slice(0, i) + '</b>' + e.slice(i) : e; }).join(' ・ '); }
-function detailHTML(q){
+function detailHTML(q, order){
   let h = "";
   if(q.opt_detail && q.opt_detail.length){
+    const ord = (order && order.length === q.options.length) ? order : q.options.map((_, i) => i);
     h += '<div class="p1box"><h4>Phần 1 — Dịch và giải nghĩa từng đáp án</h4>'
-      + q.options.map((o, i) => { const d = q.opt_detail[i] || {}; return '<div class="optd"><div class="jp"><b>' + (i+1) + '.</b> ' + esc(o) + '</div>'
+      + ord.map((oi, pos) => { const o = q.options[oi]; const d = q.opt_detail[oi] || {}; return '<div class="optd"><div class="jp"><b>' + (pos+1) + '.</b> ' + esc(o) + '</div>'
         + (d.vi ? '<div class="ovi">→ ' + hlEsc(d.vi) + '</div>' : '')
         + (d.why ? '<div class="owhy">' + (d.mark === "ng" ? '<span class="mark-ng">SAI</span> — ' : (d.mark === "ok" ? '<span class="mark-ok">ĐÚNG</span> — ' : '')) + hlEsc(d.why) + '</div>' : '')
         + '</div>'; }).join("") + '</div>';
@@ -1171,7 +1172,7 @@ function showFeedback(ok, answerText){
   let h = '<div class="result '+(ok?"ok":"ng")+'">'+(ok?T("fbCorrect"):T("fbWrong"))+' '+T("fbAnswer")+'<b>'+answerText+'</b></div>';
   if(q.explanation_vi) h += '<div class="expl">'+hlEsc(q.explanation_vi)+'</div>';
   if(q.note) h += '<p class="small">📌 '+esc(q.note)+'</p>';
-  h += detailHTML(q);
+  h += detailHTML(q, (typeof curOrder !== "undefined" && curOrder) ? curOrder : null);
   h += '<div class="toolbar" style="margin-top:12px"><button class="btn primary" onclick="nextQuestion()">'+(sIdx+1<session.length?T("nextQ"):T("seeResult"))+'</button></div>';
   $("q-feedback").innerHTML = h;
   updateScore(false);
@@ -1543,7 +1544,7 @@ function submitExam(ask){
     if(!ok){
       const ord = (EX.ord && EX.ord[q.id]) || q.options.map((_, i) => i);
       const byDisp = (a, b) => ord.indexOf(a) - ord.indexOf(b);
-      wrongList.push({q:q,
+      wrongList.push({q:q, ord: ord,
         pickedDisp: [...picked].sort(byDisp).map(o => ord.indexOf(o) + 1),
         correctDisp: [...correct].sort(byDisp).map(o => ord.indexOf(o) + 1),
         correctTexts: [...correct].sort(byDisp).map(o => q.options[o])});
@@ -1562,7 +1563,7 @@ function submitExam(ask){
     + (wrongList.length ? wrongList.map(w =>
         '<details class="starq"><summary><span class="badge">' + T("bookPage", w.q.book_page) + '</span> <span class="jp">' + esc(w.q.question) + '</span></summary>'
         + '<div style="margin-top:6px">' + T("examYourPick") + '<b>' + (w.pickedDisp.join(", ") || T("examNoPick")) + '</b>' + T("examCorrectIs") + '<b>' + w.correctDisp.join(", ") + '</b> — ' + w.correctTexts.map(t => '「' + esc(t) + '」').join(" ") + '</div>'
-        + '<div class="expl">' + esc(w.q.explanation_vi || "") + '</div>' + detailHTML(w.q) + '</details>').join("")
+        + '<div class="expl">' + esc(w.q.explanation_vi || "") + '</div>' + detailHTML(w.q, w.ord) + '</details>').join("")
       : '<p class="small">' + T("examAllRight") + '</p>')
     + '<div class="toolbar" style="margin-top:12px"><button class="btn primary" onclick="startExam()">' + T("examRetry") + '</button></div>';
   $("exam-box").innerHTML = h;
