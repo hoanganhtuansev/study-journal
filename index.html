@@ -51,7 +51,7 @@
   .small{font-size:12.5px;color:var(--grey)}
   .hidden{display:none!important}
   .center{text-align:center}
-  .hl{color:var(--red);font-weight:700}
+  
   .badge{display:inline-block;background:rgba(255,255,255,.7);border:1px solid rgba(140,160,180,.4);border-radius:20px;padding:1px 9px;margin-right:5px;font-size:12px}
   .badge.star{background:#fdecec;border-color:#f3c2c4;color:var(--red);font-weight:700}
   .badge.user{background:#fff4d6;border-color:#ecd28a;color:#7a5b00;font-weight:700}
@@ -244,7 +244,7 @@
   .optd .owhy{font-size:13.5px;color:#333}
   .mark-ok{color:#2e7d32;font-weight:bold}
   .mark-ng{color:#c62828;font-weight:bold}
-  .hl{background:#ffedb0;border-radius:3px;padding:0 2px;font-weight:700;color:#7a2e00}
+  .hl{background:#b8f1c4;border-radius:3px;padding:0 2px;font-weight:700;color:#14532d}
   details.bookdet{margin-top:10px;background:#fff;border:1px solid #d7dde8;border-radius:8px;padding:10px 12px}
   details.bookdet summary{cursor:pointer;font-weight:bold;color:var(--navy);font-size:15px}
   .bookdet h4{margin:12px 0 6px;font-size:14px;color:var(--navy)}
@@ -1137,16 +1137,29 @@ function recordAnswer(q, ok){
 }
 
 function hlEsc(s){ return esc(s).replace(/「([^」]+)」/g, '<b class="hl">「$1」</b>'); }
+function testedTerms(q){
+  const hay = (q.question || '') + '\n' + (q.options || []).join('\n');
+  const set = new Set();
+  (q.book_pairs || []).forEach(function(p){ if(p.vocab){ p.vocab.split(' \u30fb ').forEach(function(e){ const t = e.split('\uff08')[0].split(':')[0].trim(); if(t.length >= 2 && hay.indexOf(t) >= 0) set.add(t); }); } });
+  return Array.from(set);
+}
 function bookHL(q, s){
-  let h = hlEsc(s);
-  const terms = [];
-  (q.book_pairs || []).forEach(function(p){ if(p.vocab){ p.vocab.split(' ・ ').forEach(function(e){ const t = e.split('（')[0].split(':')[0].trim(); if(t.length >= 2 && !terms.includes(t)) terms.push(t); }); } });
+  const terms = testedTerms(q);
+  const seen = new Set();
+  let h = esc(s).replace(/\u300c([^\u300d]+)\u300d/g, function(m, c){ if(terms.indexOf(c) >= 0){ seen.add(c); return '<b class="hl">' + m + '</b>'; } return m; });
   if(terms.length){
     terms.sort(function(a, b){ return b.length - a.length; });
     const re = new RegExp(terms.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
-    h = h.replace(re, '<b class="hl">$&</b>');
+    h = h.split(/(<b class="hl">[^<]*<\/b>)/g).map(function(seg, i){
+      if(i % 2 === 1) return seg;
+      return seg.replace(re, function(m){ if(seen.has(m)) return m; seen.add(m); return '<b class="hl">' + m + '</b>'; });
+    }).join('');
   }
   return h;
+}
+function hlEscQ(q, s){
+  const terms = testedTerms(q);
+  return esc(s).replace(/\u300c([^\u300d]+)\u300d/g, function(m, c){ return terms.indexOf(c) >= 0 ? '<b class="hl">' + m + '</b>' : m; });
 }
 function vocHTML(s){ return esc(s).split(' ・ ').map(function(e){ const i = e.indexOf(':'); return i > 0 ? '<b>' + e.slice(0, i) + '</b>' + e.slice(i) : e; }).join(' ・ '); }
 function detailHTML(q, order){
@@ -1162,7 +1175,7 @@ function detailHTML(q, order){
   if(q.book_text || (q.book_pairs && q.book_pairs.length)){
     h += '<details class="bookdet"><summary>📖 Phần 2 — Nội dung chi tiết sách (trang ' + q.book_page + ')</summary>'
       + (q.book_text ? '<h4>2.1 — Chép lại nội dung sách (tự dịch trước)</h4><div class="booktext jp">' + bookHL(q, q.book_text) + '</div>' : '')
-      + ((q.book_pairs && q.book_pairs.length) ? '<h4>2.2 — Dịch chi tiết (Nhật trên, Việt dưới, từ vựng theo câu)</h4>' + q.book_pairs.map(p => '<div class="bpair"><div class="bjp jp">' + bookHL(q, p.jp) + '</div><div class="bvi">' + hlEsc(p.vi) + '</div>' + (p.vocab ? '<div class="bvoc">' + vocHTML(p.vocab) + '</div>' : '') + '</div>').join("") : '')
+      + ((q.book_pairs && q.book_pairs.length) ? '<h4>2.2 — Dịch chi tiết (Nhật trên, Việt dưới, từ vựng theo câu)</h4>' + q.book_pairs.map(p => '<div class="bpair"><div class="bjp jp">' + bookHL(q, p.jp) + '</div><div class="bvi">' + hlEscQ(q, p.vi) + '</div>' + (p.vocab ? '<div class="bvoc">' + vocHTML(p.vocab) + '</div>' : '') + '</div>').join("") : '')
       + '</details>';
   }
   return h;
