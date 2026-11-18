@@ -1187,10 +1187,26 @@ function detailHTML(q, order){
   }
   return h;
 }
+function remapExpl(text, order){
+  if(!text || !order) return text || "";
+  const map = {}; order.forEach((s, d) => { map[s+1] = d+1; });
+  if(order.every((s, d) => s === d)) return text;
+  return text.replace(/(lựa chọn\s*)(\d+(?:\s*[\u2013\u2014-]\s*\d+)?(?:\s*(?:,|và)\s*\d+)*)/gi, function(m, pre, nums){
+    let out = [];
+    nums.split(/\s*(?:,|và)\s*/).forEach(function(part){
+      const r = part.split(/\s*[\u2013\u2014-]\s*/);
+      if(r.length === 2){ for(let n = +r[0]; n <= +r[1]; n++) out.push(n); }
+      else if(part !== "") out.push(+part);
+    });
+    if(!out.length) return m;
+    const disp = out.map(n => map[n] || n).sort((a, b) => a - b);
+    return pre + disp.join(", ");
+  });
+}
 function showFeedback(ok, answerText){
   const q = session[sIdx];
   let h = '<div class="result '+(ok?"ok":"ng")+'">'+(ok?T("fbCorrect"):T("fbWrong"))+' '+T("fbAnswer")+'<b>'+answerText+'</b></div>';
-  if(q.explanation_vi) h += '<div class="expl">'+hlEsc(q.explanation_vi)+'</div>';
+  if(q.explanation_vi) h += '<div class="expl">'+hlEsc(remapExpl(q.explanation_vi, (typeof curOrder !== "undefined" && curOrder) ? curOrder : null))+'</div>';
   if(q.note) h += '<p class="small">📌 '+esc(q.note)+'</p>';
   h += detailHTML(q, (typeof curOrder !== "undefined" && curOrder) ? curOrder : null);
   h += '<div class="toolbar" style="margin-top:12px"><button class="btn primary" onclick="nextQuestion()">'+(sIdx+1<session.length?T("nextQ"):T("seeResult"))+'</button></div>';
@@ -1583,7 +1599,7 @@ function submitExam(ask){
     + (wrongList.length ? wrongList.map(w =>
         '<details class="starq"><summary><span class="badge">' + T("bookPage", w.q.book_page) + '</span> <span class="jp">' + esc(w.q.question) + '</span></summary>'
         + '<div style="margin-top:6px">' + T("examYourPick") + '<b>' + (w.pickedDisp.join(", ") || T("examNoPick")) + '</b>' + T("examCorrectIs") + '<b>' + w.correctDisp.join(", ") + '</b> — ' + w.correctTexts.map(t => '「' + esc(t) + '」').join(" ") + '</div>'
-        + '<div class="expl">' + esc(w.q.explanation_vi || "") + '</div>' + detailHTML(w.q, w.ord) + '</details>').join("")
+        + '<div class="expl">' + esc(remapExpl(w.q.explanation_vi || "", w.ord)) + '</div>' + detailHTML(w.q, w.ord) + '</details>').join("")
       : '<p class="small">' + T("examAllRight") + '</p>')
     + '<div class="toolbar" style="margin-top:12px"><button class="btn primary" onclick="startExam()">' + T("examRetry") + '</button></div>';
   $("exam-box").innerHTML = h;
