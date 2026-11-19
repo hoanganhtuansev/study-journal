@@ -248,6 +248,9 @@
   .cardimg{width:100%;height:auto;border:1px solid #d7dde8;border-radius:8px;margin-top:8px;background:#fff}
   .cardans{background:#f2f7ee;border:1px solid #cfe0c0;border-radius:8px;padding:10px 12px;margin-top:10px}
   .cardans h4{margin:0 0 6px;font-size:14px}
+  .cardinput{width:100%;box-sizing:border-box;margin-top:10px;padding:10px;border:1px solid #c9d4e8;border-radius:8px;font-size:15px;font-family:inherit}
+  .cardmine{background:#eef4fb;border:1px solid #c3d4ee;border-radius:8px;padding:10px 12px;margin-top:10px}
+  .cardmine h4{margin:0 0 6px;font-size:14px}
   .qtrans h4{margin:0 0 6px;font-size:14px;color:var(--navy)}
   .qtrans .ovi{margin-top:4px}
   .optd{margin:8px 0;line-height:1.65}
@@ -902,7 +905,8 @@ function applyLang(rerender){
 
 /* ---------- dữ liệu người dùng (localStorage, khoá v2) ---------- */
 let quizProg  = load("kou4v2_quiz", {results:{}});       // id câu -> true/false
-let examProg  = load("kou4v2_examq", {results:{}});      // id câu -> true/false (chỉ từ thi thử)
+let examProg  = load("kou4v2_examq", {results:{}});
+let cardAns   = load("kou4v2_cardans", {});      // id câu -> true/false (chỉ từ thi thử)
 let wrongQ    = load("kou4v2_wrongq", {});               // id câu -> số lần sai
 let gameWrong = load("kou4v2_wrongg", {});               // khoá từ -> số lần sai trong game
 let knownSet  = load("kou4v2_known", []);                // mảng khoá từ đã thuộc
@@ -916,7 +920,7 @@ function saveAll(){
   save("kou4v2_quiz", quizProg); save("kou4v2_wrongq", wrongQ); save("kou4v2_wrongg", gameWrong);
   save("kou4v2_known", knownSet); save("kou4v2_notes", notes);
   save("kou4v2_userwords", userWords); save("kou4v2_stats", stats);
-  save("kou4v2_sr", sr); save("kou4v2_mastery", mastery); save("kou4v2_exams", exams); save("kou4v2_examq", examProg);
+  save("kou4v2_sr", sr); save("kou4v2_mastery", mastery); save("kou4v2_exams", exams); save("kou4v2_examq", examProg); save("kou4v2_cardans", cardAns);
 }
 /* tuỳ chọn đảo trộn (lưu trong kou4v2_quiz.prefs — không thêm khoá localStorage mới) */
 function pref(k, def){ const p = quizProg.prefs || {}; return (k in p) ? !!p[k] : def; }
@@ -1193,6 +1197,7 @@ function renderQuestion(){
       + '<div class="qtext jp">' + esc(q.question) + '</div>'
       + (q.question_vi ? '<p class="small">→ ' + esc(q.question_vi) + '</p>' : '')
       + '<img class="cardimg" src="' + q.img + '" alt="">'
+      + '<textarea id="card-input" class="cardinput" rows="4" placeholder="Gõ đáp án của anh vào đây — nhập trước, xem đáp án sau, thế mới tính % làm…" oninput="saveCardAns()">' + esc(cardAns[q.id] || "") + '</textarea>'
       + '<div class="toolbar" style="margin-top:10px"><button class="btn primary" onclick="revealCard()">Xem đáp án</button></div>'
       + '<div id="q-feedback"></div>';
     $("quiz-box").innerHTML = h;
@@ -1209,15 +1214,29 @@ function renderQuestion(){
   if(q.answer===null) h += '<p class="small">'+T("noAnsNote")+'</p>';
   $("quiz-box").innerHTML = h;
 }
+function saveCardAns(){
+  const ta = $("card-input"); const q = session[sIdx];
+  if(!ta || !q) return;
+  cardAns[q.id] = ta.value; save("kou4v2_cardans", cardAns);
+}
 function revealCard(){
   const q = session[sIdx]; if(!q || q.type !== "card") return;
-  let h = '<div class="cardans"><h4>Đáp án chính thức</h4><div class="jp">' + esc(q.ans_jp || "") + '</div>'
+  saveCardAns();
+  const mine = (cardAns[q.id] || "").trim();
+  let h = '';
+  if(mine) h += '<div class="cardmine"><h4>Đáp án của anh</h4><div>' + esc(mine).replace(/\n/g, "<br>") + '</div></div>';
+  h += '<div class="cardans"><h4>Đáp án chính thức</h4><div class="jp">' + esc(q.ans_jp || "") + '</div>'
     + (q.ans_img ? '<img class="cardimg" src="' + q.ans_img + '" alt="">' : '')
     + (q.ans_vi ? '<div class="ovi" style="margin-top:6px">→ ' + esc(q.ans_vi) + '</div>' : '')
-    + '</div>'
-    + '<div class="toolbar" style="margin-top:10px"><span class="small" style="margin-right:8px">Tự chấm:</span>'
-    + '<button class="btn primary" onclick="gradeCard(true)">✓ Trả lời được</button>'
-    + '<button class="btn" onclick="gradeCard(false)">✗ Chưa được</button></div>';
+    + '</div>';
+  if(mine){
+    h += '<div class="toolbar" style="margin-top:10px"><span class="small" style="margin-right:8px">Tự chấm:</span>'
+      + '<button class="btn primary" onclick="gradeCard(true)">✓ Trả lời được</button>'
+      + '<button class="btn" onclick="gradeCard(false)">✗ Chưa được</button></div>';
+  } else {
+    h += '<p class="small" style="margin-top:8px">Anh chưa nhập đáp án nên lần xem này không tính vào %. Muốn được tính thì nhập đáp án trước khi xem.</p>'
+      + '<div class="toolbar" style="margin-top:6px"><button class="btn" onclick="renderQuestion()">Làm lại thẻ này</button></div>';
+  }
   $("q-feedback").innerHTML = h;
 }
 function gradeCard(ok){
