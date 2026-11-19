@@ -973,6 +973,35 @@ function sideCounts(ch, sec){
 }
 function pctObjFor(qs){ return {pctR: pctDone(qs.filter(q=>!q.variant)), pctE: pctDone(qs.filter(q=>!q.variant), examProg), pctV: pctDone(qs.filter(q=>q.variant))}; }
 function pctLine(o){ const s = pctSplitSuffix(o).replace(/^ • /, ""); return s || T("noDataSuffix").replace(/^ • /, ""); }
+function chapterEndP(c){ const sib = CHAPTERS.filter(x => x.vol===c.vol && x.page > c.page).sort((a,b)=>a.page-b.page); return sib.length ? sib[0].page : c.page + 60; }
+function estChapter(c){
+  const secs = c.sections || []; if(!secs.length) return null;
+  const endP = chapterEndP(c);
+  let tot = 0; const acc = {pctR:0, pctE:0, pctV:0};
+  secs.forEach((s, i) => {
+    const span = ((i+1 < secs.length) ? secs[i+1].page : endP) - s.page;
+    if(span <= 0) return;
+    tot += span;
+    const sc = sideCounts(c.ch, s.n);
+    acc.pctR += span * (sc.pctR || 0); acc.pctE += span * (sc.pctE || 0); acc.pctV += span * (sc.pctV || 0);
+  });
+  if(!tot) return null;
+  return {pctR: Math.round(acc.pctR/tot), pctE: Math.round(acc.pctE/tot), pctV: Math.round(acc.pctV/tot)};
+}
+function estVolume(vol){
+  const chs = CHAPTERS.filter(c => c.vol===vol && !c.exempt);
+  if(!chs.some(c => (c.sections||[]).length)) return null;
+  let tot = 0; const acc = {pctR:0, pctE:0, pctV:0};
+  chs.forEach(c => {
+    const span = chapterEndP(c) - c.page; if(span <= 0) return;
+    tot += span;
+    const e = estChapter(c) || {pctR:0, pctE:0, pctV:0};
+    acc.pctR += span * e.pctR; acc.pctE += span * e.pctE; acc.pctV += span * e.pctV;
+  });
+  if(!tot) return null;
+  return {pctR: Math.round(acc.pctR/tot), pctE: Math.round(acc.pctE/tot), pctV: Math.round(acc.pctV/tot)};
+}
+function estLine(o){ const s = pctSplitSuffix(o).replace(/(\d+)%/g, "~$1%").replace(/^ • /, ""); return s || T("noDataSuffix").replace(/^ • /, ""); }
 function pctSplitSuffix(o){
   let s = "";
   if(o.pctR!=null) s += T("pctRealSuffix", o.pctR);
@@ -998,7 +1027,8 @@ function renderSidebar(){
     const vOpen = !!tocOpen.vol[vol];
     const vChs = CHAPTERS.filter(c => c.vol===vol).map(c=>c.ch);
     const vqs = QUESTIONS.filter(q=>vChs.includes(q._ch));
-    h += '<div class="side-item side-vol" onclick="toggleTocVol(\''+vol+'\')"><div class="nm jp"><span class="toc-arrow">'+(vOpen?"▾":"▸")+'</span>' + esc(vol) + '</div><div class="sub">' + pctLine(pctObjFor(vqs)) + '</div></div>';
+    const ve = estVolume(vol);
+    h += '<div class="side-item side-vol" onclick="toggleTocVol(\''+vol+'\')"><div class="nm jp"><span class="toc-arrow">'+(vOpen?"▾":"▸")+'</span>' + esc(vol) + '</div><div class="sub">' + (ve ? estLine(ve) : pctLine(pctObjFor(vqs))) + '</div></div>';
     if(!vOpen) return;
     CHAPTERS.filter(c=>c.vol===vol).forEach(c => {
       const cc = sideCounts(c.ch, 0);
@@ -1008,7 +1038,8 @@ function renderSidebar(){
         return;
       }
       const act = (S.ch===c.ch && !S.sec) ? " active" : "";
-      let sub = pctLine(cc);
+      const ce = estChapter(c);
+      let sub = ce ? estLine(ce) : pctLine(cc);
       const hasSec = (c.sections||[]).length > 0;
       const cOpen = !!tocOpen.ch[c.ch];
       const arrow = hasSec ? '<span class="toc-arrow" onclick="event.stopPropagation();toggleTocCh('+c.ch+')">'+(cOpen?"▾":"▸")+'</span>' : '';
