@@ -548,8 +548,8 @@ vi: {
   sidebarTitle: "📖 Mục lục sách",
   qvCounts: "{0} câu • {1} từ", doneSuffix: " • đã làm {0}%", dueTitle: "⏰ Đến hạn ôn", itemsUnit: "{0} mục",
   dueSub: "{0} câu • {1} từ đã đến hạn (ôn cách quãng 1-3-7-14)",
-  exemptBadge: "Được miễn thi", exemptSub: "tr.{0} (quyển {1}) — phần điện được miễn, không tính tiến độ",
-  pageSuffix: " • tr.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • thật {0}%", pctVarSuffix: " • rộng {0}%", noDataSuffix: " • chưa có dữ liệu",
+  exemptBadge: "Được miễn thi", exemptSub: "phần điện được miễn, không tính tiến độ",
+  pageSuffix: " • tr.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • luyện đề {0}%", pctExamSuffix: " • thi thử {0}%", pctVarSuffix: " • mở rộng {0}%", noDataSuffix: " • chưa có dữ liệu",
   quizHint: "Phạm vi: <b>{0}</b>. Chọn nhóm câu ở trên để bắt đầu luyện. Câu có nhãn <b style=\"color:var(--red)\">★</b> là câu sách đánh dấu hay ra thi.",
   scoreScope: "Phạm vi này: đã làm {0}/{1} câu • đúng {2} câu", scoreSession: "Phiên này: {0}/{1} câu, đúng {2}",
   scoreFinished: " &nbsp;—&nbsp; <b>Đã xong phiên!</b>",
@@ -666,8 +666,8 @@ en: {
   sidebarTitle: "📖 Book contents",
   qvCounts: "{0} Q • {1} words", doneSuffix: " • {0}% done", dueTitle: "⏰ Due for review", itemsUnit: "{0} items",
   dueSub: "{0} Q • {1} words due (spaced review 1-3-7-14)",
-  exemptBadge: "Exempt", exemptSub: "p.{0} ({1}) — the electrical part is exempt; not counted in progress",
-  pageSuffix: " • p.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • real {0}%", pctVarSuffix: " • ext {0}%", noDataSuffix: " • no data yet",
+  exemptBadge: "Exempt", exemptSub: "the electrical part is exempt; not counted in progress",
+  pageSuffix: " • p.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • practice {0}%", pctExamSuffix: " • mock exam {0}%", pctVarSuffix: " • expansion {0}%", noDataSuffix: " • no data yet",
   quizHint: "Scope: <b>{0}</b>. Pick a question set above to start practicing. Questions marked <b style=\"color:var(--red)\">★</b> are flagged by the book as frequently asked.",
   scoreScope: "This scope: {0}/{1} questions done • {2} correct", scoreSession: "This session: {0}/{1}, {2} correct",
   scoreFinished: " &nbsp;—&nbsp; <b>Session complete!</b>",
@@ -784,8 +784,8 @@ ja: {
   sidebarTitle: "📖 目次",
   qvCounts: "{0}問 • {1}語", doneSuffix: " • {0}%実施", dueTitle: "⏰ 復習期限", itemsUnit: "{0}件",
   dueSub: "{0}問 • {1}語が期限です（間隔反復 1-3-7-14）",
-  exemptBadge: "免除", exemptSub: "p.{0}（{1}）— 電気分野は免除のため進捗に含みません",
-  pageSuffix: " • p.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • 本題{0}%", pctVarSuffix: " • 拡張{0}%", noDataSuffix: " • データ未収録",
+  exemptBadge: "免除", exemptSub: "電気分野は免除のため進捗に含みません",
+  pageSuffix: " • p.{0}", pctSuffix: " • {0}%", pctRealSuffix: " • 練習 {0}%", pctExamSuffix: " • 模試 {0}%", pctVarSuffix: " • 拡張 {0}%", noDataSuffix: " • データ未収録",
   quizHint: "範囲：<b>{0}</b>。上のボタンで問題セットを選んで演習を始めましょう。<b style=\"color:var(--red)\">★</b> は本が頻出と示した問題です。",
   scoreScope: "この範囲：{0}/{1}問実施 • 正解{2}問", scoreSession: "このセッション：{0}/{1}問、正解{2}",
   scoreFinished: " &nbsp;—&nbsp; <b>セッション完了！</b>",
@@ -902,6 +902,7 @@ function applyLang(rerender){
 
 /* ---------- dữ liệu người dùng (localStorage, khoá v2) ---------- */
 let quizProg  = load("kou4v2_quiz", {results:{}});       // id câu -> true/false
+let examProg  = load("kou4v2_examq", {results:{}});      // id câu -> true/false (chỉ từ thi thử)
 let wrongQ    = load("kou4v2_wrongq", {});               // id câu -> số lần sai
 let gameWrong = load("kou4v2_wrongg", {});               // khoá từ -> số lần sai trong game
 let knownSet  = load("kou4v2_known", []);                // mảng khoá từ đã thuộc
@@ -915,7 +916,7 @@ function saveAll(){
   save("kou4v2_quiz", quizProg); save("kou4v2_wrongq", wrongQ); save("kou4v2_wrongg", gameWrong);
   save("kou4v2_known", knownSet); save("kou4v2_notes", notes);
   save("kou4v2_userwords", userWords); save("kou4v2_stats", stats);
-  save("kou4v2_sr", sr); save("kou4v2_mastery", mastery); save("kou4v2_exams", exams);
+  save("kou4v2_sr", sr); save("kou4v2_mastery", mastery); save("kou4v2_exams", exams); save("kou4v2_examq", examProg);
 }
 /* tuỳ chọn đảo trộn (lưu trong kou4v2_quiz.prefs — không thêm khoá localStorage mới) */
 function pref(k, def){ const p = quizProg.prefs || {}; return (k in p) ? !!p[k] : def; }
@@ -964,15 +965,18 @@ function scopeLabel(){
   if(S.sec){ const s = (c.sections||[]).find(x=>x.n===S.sec); if(s) t += " › " + s.n + ". " + s.name; }
   return t;
 }
-function pctDone(qs){ if(!qs.length) return null; const done = qs.filter(q=>q.id in quizProg.results).length; return Math.round(done/qs.length*100); }
+function pctDone(qs, store){ const st = store || quizProg; if(!qs.length) return null; const done = qs.filter(q=>q.id in st.results).length; return Math.round(done/qs.length*100); }
 function sideCounts(ch, sec){
   const qs = QUESTIONS.filter(q => q._ch===ch && (!sec || q._sec===sec));
   const vs = VOCAB.filter(v => v._ch===ch && (!sec || v._sec===sec));
-  return {qs, vs, pct: pctDone(qs), pctR: pctDone(qs.filter(q=>!q.variant)), pctV: pctDone(qs.filter(q=>q.variant))};
+  return {qs, vs, pct: pctDone(qs), pctR: pctDone(qs.filter(q=>!q.variant)), pctE: pctDone(qs.filter(q=>!q.variant), examProg), pctV: pctDone(qs.filter(q=>q.variant))};
 }
+function pctObjFor(qs){ return {pctR: pctDone(qs.filter(q=>!q.variant)), pctE: pctDone(qs.filter(q=>!q.variant), examProg), pctV: pctDone(qs.filter(q=>q.variant))}; }
+function pctLine(o){ const s = pctSplitSuffix(o).replace(/^ • /, ""); return s || T("noDataSuffix").replace(/^ • /, ""); }
 function pctSplitSuffix(o){
   let s = "";
   if(o.pctR!=null) s += T("pctRealSuffix", o.pctR);
+  if(o.pctE!=null) s += T("pctExamSuffix", o.pctE);
   if(o.pctV!=null) s += T("pctVarSuffix", o.pctV);
   return s;
 }
@@ -984,19 +988,17 @@ function toggleTocCh(ch){ tocOpen.ch[ch] = !tocOpen.ch[ch]; saveToc(); renderSid
 function toggleTocWeb(){ tocOpen.web = !tocOpen.web; saveToc(); renderSidebar(); }
 function renderSidebar(){
   let h = "<h2>" + T("sidebarTitle") + "</h2>";
-  const tp = pctDone(QUESTIONS);
-  const tpO = {pctR: pctDone(QUESTIONS.filter(q=>!q.variant)), pctV: pctDone(QUESTIONS.filter(q=>q.variant))};
+  const tpO = pctObjFor(QUESTIONS);
   h += '<div class="side-item'+(S.ch===0?" active":"")+'" onclick="setScope(0,0)"><div class="nm">🌐 ' + T("scopeAllText") + '</div><div class="sub">'
-     + T("qvCounts", QUESTIONS.length, allVocab().length) + pctSplitSuffix(tpO) + "</div></div>";
+     + pctLine(tpO) + "</div></div>";
   const due = dueItems();
   h += '<div class="side-item" onclick="toggleDrawer(false);showMode(\'today\')"><div class="nm">' + T("dueTitle") + ' <span class="badge dueb">' + T("itemsUnit", due.q.length + due.v.length) + '</span></div>'
      + '<div class="sub">' + T("dueSub", due.q.length, due.v.length) + '</div></div>';
   ["上巻","下巻"].forEach(vol => {
     const vOpen = !!tocOpen.vol[vol];
     const vChs = CHAPTERS.filter(c => c.vol===vol).map(c=>c.ch);
-    const vq = QUESTIONS.filter(q=>vChs.includes(q._ch)).length;
-    const vv = VOCAB.filter(v=>vChs.includes(v._ch)).length;
-    h += '<div class="side-item side-vol" onclick="toggleTocVol(\''+vol+'\')"><div class="nm jp"><span class="toc-arrow">'+(vOpen?"▾":"▸")+'</span>' + esc(vol) + '</div><div class="sub">' + T("qvCounts", vq, vv) + '</div></div>';
+    const vqs = QUESTIONS.filter(q=>vChs.includes(q._ch));
+    h += '<div class="side-item side-vol" onclick="toggleTocVol(\''+vol+'\')"><div class="nm jp"><span class="toc-arrow">'+(vOpen?"▾":"▸")+'</span>' + esc(vol) + '</div><div class="sub">' + pctLine(pctObjFor(vqs)) + '</div></div>';
     if(!vOpen) return;
     CHAPTERS.filter(c=>c.vol===vol).forEach(c => {
       const cc = sideCounts(c.ch, 0);
@@ -1006,9 +1008,7 @@ function renderSidebar(){
         return;
       }
       const act = (S.ch===c.ch && !S.sec) ? " active" : "";
-      let sub = T("qvCounts", cc.qs.length, cc.vs.length) + T("pageSuffix", c.page);
-      sub += pctSplitSuffix(cc);
-      if(!cc.qs.length && !cc.vs.length) sub += T("noDataSuffix");
+      let sub = pctLine(cc);
       const hasSec = (c.sections||[]).length > 0;
       const cOpen = !!tocOpen.ch[c.ch];
       const arrow = hasSec ? '<span class="toc-arrow" onclick="event.stopPropagation();toggleTocCh('+c.ch+')">'+(cOpen?"▾":"▸")+'</span>' : '';
@@ -1017,8 +1017,7 @@ function renderSidebar(){
         (c.sections||[]).forEach(s => {
           const sc = sideCounts(c.ch, s.n);
           const a2 = (S.ch===c.ch && S.sec===s.n) ? " active" : "";
-          let s2 = T("qvCounts", sc.qs.length, sc.vs.length) + T("pageSuffix", s.page);
-          s2 += pctSplitSuffix(sc);
+          let s2 = pctLine(sc);
           h += '<div class="side-item side-sec'+a2+'" onclick="setScope('+c.ch+","+s.n+')"><div class="nm jp">'+s.n+". "+esc(s.name)+'</div><div class="sub">'+esc(s2)+"</div></div>";
         });
       }
@@ -1029,12 +1028,12 @@ function renderSidebar(){
   if(wOpen){
     const c9 = CHAPTERS.find(c=>c.ch===9);
     const cc9 = sideCounts(9, 0);
-    let s9 = T("qvCounts", cc9.qs.length, cc9.vs.length); s9 += pctSplitSuffix(cc9);
+    let s9 = pctLine(cc9);
     const exN9 = cc9.qs.filter(q=>q.exempt).length; if(exN9) s9 += ' • ' + exN9 + ' câu được miễn';
     h += '<div class="side-item side-ch'+(S.ch===9 && !S.sec ? " active" : "")+'" onclick="setScope(9,0)"><div class="nm">Toàn bộ bộ đề</div><div class="sub">'+esc(s9)+'</div></div>';
     if(c9){ (c9.sections||[]).forEach(s => {
       const sc = sideCounts(9, s.n);
-      let s2 = T("qvCounts", sc.qs.length, sc.vs.length); s2 += pctSplitSuffix(sc);
+      let s2 = pctLine(sc);
       h += '<div class="side-item side-sec'+(S.ch===9 && S.sec===s.n ? " active" : "")+'" onclick="setScope(9,'+s.n+')"><div class="nm jp">'+s.n+". "+esc(s.name)+'</div><div class="sub">'+esc(s2)+'</div></div>';
     }); }
   }
@@ -1663,7 +1662,7 @@ function submitExam(ask){
     if(!q.exempt){
       if(!secStat[key]) secStat[key] = {n:0, ok:0};
       secStat[key].n++; if(ok){ okN++; secStat[key].ok++; }
-      srRecord("q", q.id, ok);
+      srRecord("q", q.id, ok); examProg.results[q.id] = ok;
     }
     if(!ok){
       const ord = (EX.ord && EX.ord[q.id]) || q.options.map((_, i) => i);
@@ -1733,7 +1732,7 @@ function renderStats(){
 function exportLearning(){
   const data = {app:"kou4-book-app", kind:"learning-data", version:2, exportedAt:new Date().toISOString(),
     quizProg:quizProg, wrongQ:wrongQ, gameWrong:gameWrong, knownSet:knownSet, notes:notes, userWords:userWords, stats:stats,
-    sr:sr, mastery:mastery, exams:exams};
+    sr:sr, mastery:mastery, exams:exams, examProg:examProg};
   download("kou4-du-lieu-hoc.json", JSON.stringify(data, null, 2));
   $("stats-msg").textContent = T("exportMsg", locNow());
 }
@@ -1746,7 +1745,7 @@ function importLearning(ev){
       if(!d || d.kind !== "learning-data" || !d.quizProg) throw new Error("bad file");
       quizProg = d.quizProg || {results:{}}; wrongQ = d.wrongQ || {}; gameWrong = d.gameWrong || {};
       knownSet = d.knownSet || []; notes = d.notes || []; userWords = d.userWords || []; stats = d.stats || {days:{}};
-      sr = d.sr || {}; mastery = d.mastery || {}; exams = d.exams || [];
+      sr = d.sr || {}; mastery = d.mastery || {}; exams = d.exams || []; examProg = d.examProg || {results:{}};
       saveAll();
       session = []; setScope(0, 0); showMode("stats");
       $("stats-msg").textContent = T("importOkMsg", d.exportedAt || "?");
@@ -1759,7 +1758,7 @@ function resetLearning(){
   if(!confirm(T("resetAllConfirm"))) return;
   const pf2 = quizProg.prefs;
   quizProg = {results:{}}; if(pf2) quizProg.prefs = pf2; wrongQ = {}; gameWrong = {}; knownSet = []; notes = []; userWords = []; stats = {days:{}};
-  sr = {}; mastery = {}; exams = [];
+  sr = {}; mastery = {}; exams = []; examProg = {results:{}};
   saveAll(); session = []; setScope(0, 0); showMode("stats");
   $("stats-msg").textContent = T("resetDoneMsg");
 }
